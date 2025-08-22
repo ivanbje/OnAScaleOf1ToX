@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Card Deck Simulator</title>
+  <style>
+    :root {
+      --bg: #0f172a;       /* slate-900 */
+      --panel: #111827;    /* gray-900 */
+      --muted: #94a3b8;    /* slate-400 */
+      --text: #e5e7eb;     /* gray-200 */
+      --acc: #38bdf8;      /* sky-400 */
+      --acc-2: #22d3ee;    /* cyan-400 */
+      --danger: #f87171;   /* red-400 */
+      --ok: #34d399;       /* emerald-400 */
+      --card: #0b1220;
+      --border: #1f2937;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #0b1220 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+
+    .container { max-width: 950px; margin: 40px auto; padding: 0 20px; }
+
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    header h1 { margin: 0; font-size: clamp(22px, 2.6vw, 34px); letter-spacing: .4px; }
+    header .counts { font-size: 14px; color: var(--muted); }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+    .panel h2 { margin: 0 0 12px; font-size: 16px; color: var(--muted); font-weight: 600; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+    button {
+      --pad: 11px 14px; --f: 14px; --r: 12px;
+      padding: var(--pad); font-size: var(--f); border-radius: var(--r); border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(56,189,248,.25), rgba(34,211,238,.18)); color: white; cursor: pointer;
+      transition: transform .06s ease, filter .2s ease, background .2s ease;
+    }
+    button:hover { filter: brightness(1.06); }
+    button:active { transform: translateY(1px); }
+
+    .btn-secondary { background: #0b1220; color: var(--text); }
+    .btn-danger { background: linear-gradient(180deg, rgba(248,113,113,.25), rgba(248,113,113,.18)); }
+
+    .status { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 18px; }
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--ok); }
+
+    .stage { display: grid; grid-template-columns: 1fr; gap: 20px; }
+
+    .card {
+      background: radial-gradient(600px 300px at 0% 0%, #0f1a2c 0%, var(--card) 60%);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      min-height: 220px;
+      padding: 20px 22px;
+      display: grid; grid-template-rows: auto 1fr auto; gap: 12px;
+    }
+    .card h3 { margin: 0; font-size: 17px; color: var(--muted); }
+
+    .card .big {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start;
+    }
+    @media (max-width: 540px) { .card .big { grid-template-columns: 1fr; } }
+
+    .pill { display: inline-block; background: #0b1526; border: 1px solid #243246; padding: 10px 12px; border-radius: 999px; font-weight: 600; text-align: center; }
+    .pill.accent { border-color: #214157; background: #0a2434; }
+
+    .muted { color: var(--muted); }
+
+    .footer-rows { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .tiny { font-size: 12px; color: var(--muted); }
+
+    .note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+    code.inline { background: #0b1526; border: 1px solid #243246; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Card Deck Simulator</h1>
+      <div class="counts" id="counts">Deck: 0 • Drawn: 0</div>
+    </header>
+
+    <section class="panel" style="margin-bottom: 20px;">
+      <h2>Deck Controls</h2>
+      <div class="actions">
+        <button id="build" title="Shuffle and create a new deck">Shuffle & Create Deck</button>
+        <button id="draw" class="btn-secondary" title="Draw next card">Draw Next</button>
+      </div>
+      <div id="status" class="status"></div>
+      <div class="note">Categories are hardcoded. To change them later, edit the <code class="inline">GENERIC</code> and <code class="inline">NICHE</code> arrays in the source.</div>
+    </section>
+
+    <section class="stage">
+      <div class="card" id="card">
+        <h3>Current Card</h3>
+        <div class="big" id="cardBody">
+          <div class="pill">—</div>
+          <div class="pill">—</div>
+          <div class="pill accent" style="grid-column: 1 / -1">—</div>
+        </div>
+        <div class="footer-rows">
+          <div class="tiny" id="progress">0 / 0</div>
+          <div class="tiny" id="rem">0 remaining</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // ---------- Category Arrays (hardcoded) ----------
+    const GENERIC = [
+      "Movie","TV show","Music Artist","Book","Book series","Video Game","Actor/Actress","Podcast","Stand-up Artist","Comedian","Food","Candy","Chips","Soft drink","Alcohol","Restaurant","Shop","Cereal","Board game","App","Animal","Clothing Brand","Pizza topping","Funny movie","Disney Princess","Villain","Instrument","Smell","Superhero","School subject","City/Town","Superpower","Energy drink","Type of shoe","Writer","Color","Music Genre","Language","Random item","Logo-design","Cartoon","Anime","Habit","Icecream flavor"
+    ];
+
+    const NICHE = [
+      "Pókemon","Anime character","Harry Potter character","Sonic character","Sex position","Festival","SUV","Youtuber","Tiktok star","Boss Fight","Video Game Weapon","Friends character","Anime opening","Digimon","Carebear","My little pony","Computer monitors","Sunglasses","Handbags","Font","Programming Language","Car tires","Director","Perfume","Make-up brands","Whisky","Beer","Knitting yarn","Sword","Mythical Creature","Souls-like","Web design","Arts and crafts","Kink","Building","Church","Waterfall"
+    ];
+
+    // ---------- Utilities ----------
+    const qs = (sel) => document.querySelector(sel);
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function distributeGenerics(generic, N) {
+      const G = generic.length;
+      const total = 2 * N;
+      const base = Math.floor(total / G);
+      const rem = total % G;
+      return generic.map((name, i) => ({ name, count: base + (i < rem ? 1 : 0) }));
+    }
+
+    function buildDeck(generic, niche) {
+      const N = niche.length;
+      const G = generic.length;
+      if (N === 0) return { deck: [], error: "No niche categories provided." };
+      if (G < 2) return { deck: [], error: "Need at least TWO generic categories." };
+
+      const counts = distributeGenerics(generic, N).map((g, idx) => ({ ...g, idx }));
+      const cards = [];
+
+      for (let i = 0; i < N; i++) {
+        counts.sort((a, b) => b.count - a.count);
+        const first = counts[0];
+        const second = counts.find((c, idx) => idx !== 0 && c.count > 0);
+
+        if (!first || first.count === 0 || !second || second.count === 0) {
+          return { deck: [], error: "Unable to pair two different generics. Add more generic items." };
+        }
+
+        cards.push({ g1: first.name, g2: second.name, niche: niche[i] });
+        first.count--; second.count--;
+      }
+
+      return { deck: shuffle(cards), error: null };
+    }
+
+    // ---------- State & UI helpers ----------
+    let deck = [];
+    let index = 0;
+
+    function updateCounts() {
+      const countsEl = qs('#counts');
+      const progEl = qs('#progress');
+      const remEl = qs('#rem');
+      if (countsEl) countsEl.textContent = `Deck: ${deck.length} • Drawn: ${index}`;
+      if (progEl) progEl.textContent = `${Math.min(index, deck.length)} / ${deck.length}`;
+      if (remEl) remEl.textContent = `${Math.max(deck.length - index, 0)} remaining`;
+    }
+
+    function showCard(card) {
+      const body = qs('#cardBody');
+      if (!body) return;
+      body.innerHTML = '';
+      const g1 = document.createElement('div'); g1.className = 'pill'; g1.textContent = card ? card.g1 : '—';
+      const g2 = document.createElement('div'); g2.className = 'pill'; g2.textContent = card ? card.g2 : '—';
+      const n = document.createElement('div'); n.className = 'pill accent'; n.style.gridColumn = '1 / -1'; n.textContent = card ? card.niche : '—';
+      body.appendChild(g1); body.appendChild(g2); body.appendChild(n);
+    }
+
+    function setStatus(msg, kind='') {
+      const el = qs('#status');
+      if (!el) return;
+      el.className = `status ${kind}`.trim();
+      el.textContent = msg || '';
+    }
+
+    function buildNewDeck() {
+      const { deck: d, error } = buildDeck(GENERIC, NICHE);
+      if (error) { setStatus(error, 'error'); deck = []; index = 0; showCard(null); updateCounts(); return; }
+      deck = d; index = 0; showCard(null); updateCounts();
+      setStatus(`New deck created with ${deck.length} card(s).`, 'success');
+    }
+
+    function drawNext() {
+      if (index >= deck.length) { setStatus('The deck is empty. Shuffle & create a new one.', 'error'); showCard(null); updateCounts(); return; }
+      const card = deck[index]; index++; showCard(card); updateCounts(); setStatus('');
+    }
+
+    // ---------- Ensure DOM is ready before wiring ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const buildBtn = qs('#build');
+      const drawBtn = qs('#draw');
+
+      if (buildBtn) buildBtn.addEventListener('click', buildNewDeck);
+      if (drawBtn) drawBtn.addEventListener('click', drawNext);
+
+      // Initial render
+      updateCounts();
+      showCard(null);
+    });
+  </script>
+</body>
+</html>
