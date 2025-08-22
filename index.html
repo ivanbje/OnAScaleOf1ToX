@@ -98,7 +98,7 @@
         <button id="draw" class="btn-secondary" title="Draw next card">Draw Next</button>
       </div>
       <div id="status" class="status"></div>
-      <div class="note">Categories are hardcoded. To change them later, edit the <code class="inline">GENERIC</code> and <code class="inline">NICHE</code> arrays in the source.</div>
+      <!--<div class="note">Categories are hardcoded. To change them later, edit the <code class="inline">GENERIC</code> and <code class="inline">NICHE</code> arrays in the source.</div>-->
     </section>
 
     <section class="stage">
@@ -120,11 +120,11 @@
 
   <script>
     // ---------- Category Arrays (hardcoded) ----------
-    const GENERIC = [
+    GENERIC = [
       "Movie","TV show","Music Artist","Book","Book series","Video Game","Actor/Actress","Podcast","Stand-up Artist","Comedian","Food","Candy","Chips","Soft drink","Alcohol","Restaurant","Shop","Cereal","Board game","App","Animal","Clothing Brand","Pizza topping","Funny movie","Disney Princess","Villain","Instrument","Smell","Superhero","School subject","City/Town","Superpower","Energy drink","Type of shoe","Writer","Color","Music Genre","Language","Random item","Logo-design","Cartoon","Anime","Habit","Icecream flavor"
     ];
 
-    const NICHE = [
+    NICHE = [
       "Pókemon","Anime character","Harry Potter character","Sonic character","Sex position","Festival","SUV","Youtuber","Tiktok star","Boss Fight","Video Game Weapon","Friends character","Anime opening","Digimon","Carebear","My little pony","Computer monitors","Sunglasses","Handbags","Font","Programming Language","Car tires","Director","Perfume","Make-up brands","Whisky","Beer","Knitting yarn","Sword","Mythical Creature","Souls-like","Web design","Arts and crafts","Kink","Building","Church","Waterfall"
     ];
 
@@ -139,6 +139,22 @@
       }
       return a;
     }
+
+    function arrayShuffle(array) {
+  let currentIndex = array.length;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+}
 
     function distributeGenerics(generic, N) {
       const G = generic.length;
@@ -204,6 +220,8 @@
     }
 
     function buildNewDeck() {
+    	arrayShuffle(GENERIC);
+    	arrayShuffle(NICHE);
       const { deck: d, error } = buildDeck(GENERIC, NICHE);
       if (error) { setStatus(error, 'error'); deck = []; index = 0; showCard(null); updateCounts(); return; }
       deck = d; index = 0; showCard(null); updateCounts();
